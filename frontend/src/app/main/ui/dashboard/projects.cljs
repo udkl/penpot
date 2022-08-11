@@ -54,6 +54,33 @@
      [:button.close {:on-click close-banner}
       [:span i/close]]]))
 
+(mf/defc tutorial-project
+  {::mf/wrap [mf/memo]}
+  [{:keys [close-tutorial] :as props}]
+  
+  [:div.tutorial
+   [:div.img "image"]
+   [:div.text
+    [:div.title "Hands on Tutorial"]
+    [:div.info "Learn the basics at Penpot while having some fun with this hands on tutorial."]
+    [:button.action "Start tutorial"]]
+   [:button.close
+    {:on-click close-tutorial}
+    [:span.icon i/close]]])
+
+(mf/defc interface-walkthrought
+  {::mf/wrap [mf/memo]}
+  [{:keys [close-walkthrought] :as props}] 
+  [:div.walkthrought
+   [:div.img "image"]
+   [:div.text
+    [:div.title "Interface Walkthrought"]
+    [:div.info "Take a walk through Penpot and get to know its main features."]
+    [:button.action "Start the tour"]]
+   [:button.close
+    {:on-click close-walkthrought}
+    [:span.icon i/close]]])
+
 (mf/defc project-item
   [{:keys [project first? team files] :as props}]
   (let [locale     (mf/deref i18n/locale)
@@ -215,16 +242,23 @@
 
 (mf/defc projects-section
   [{:keys [team projects profile] :as props}]
-  (let [projects    (->> (vals projects)
-                         (sort-by :modified-at)
-                         (reverse))
-        recent-map  (mf/deref recent-files-ref)
-        props       (some-> profile (get :props {}))
-        team-hero?  (:team-hero? props true)
-
-        close-banner (fn []
-                       (st/emit!
-                        (du/update-profile-props {:team-hero? false})))]
+  (let [projects           (->> (vals projects)
+                                (sort-by :modified-at)
+                                (reverse))
+        recent-map         (mf/deref recent-files-ref)
+        props              (some-> profile (get :props {}))
+        team-hero?         (:team-hero? props true)
+        tutorial?          (:tutorial? props true)
+        walkthrought?      (:walkthrought? props true)
+        close-banner       (fn []
+                             (st/emit!
+                              (du/update-profile-props {:team-hero? false})))
+        close-tutorial     (fn []
+                             (st/emit!
+                              (du/update-profile-props {:tutorial? false})))
+        close-walkthrought (fn []
+                             (st/emit!
+                              (du/update-profile-props {:walkthrought? false})))]
 
     (mf/use-effect
      (mf/deps team)
@@ -244,9 +278,18 @@
       [:*
        [:& header]
        (when (and team-hero? (not (:is-default team)))
-         [:& team-hero 
+         [:& team-hero
           {:team team
            :close-banner close-banner}])
+       (when (or tutorial? walkthrought?)
+         [:div.hero-projects
+          (when (and tutorial? (:is-default team))
+            [:& tutorial-project
+             {:close-tutorial close-tutorial}])
+
+          (when (and walkthrought? (:is-default team))
+            [:& interface-walkthrought
+             {:close-walkthrought close-walkthrought}])])
 
        [:section.dashboard-container.no-bg
         (for [{:keys [id] :as project} projects]
