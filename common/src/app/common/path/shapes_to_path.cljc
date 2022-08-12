@@ -221,10 +221,11 @@
      (let [new-content
            (case type
              :circle (circle->path shape)
-             #_:else (rect->path shape))
+             :rect (rect->path shape))
 
            ;; Apply the transforms that had the shape
            transform (:transform shape)
+
            new-content (cond-> new-content
                          (some? transform)
                          (gsp/transform-content (gmt/transform-in (gsc/center-shape shape) transform)))]

@@ -90,24 +90,23 @@
   (let [_ (println ":::" attr)
         rotation (:rotation shape)
         attr (cond->> attr
-               (> rotation 45)
-               (get {:r1 :r4 :r2 :r1 :r3 :r2 :r4 :r3})
-
-               (> rotation 135)
-               (get {:r1 :r3 :r2 :r4 :r3 :r1 :r4 :r2})
-
-               (> rotation 225)
-               (get {:r1 :r2 :r2 :r1 :r3 :r4 :r4 :r3})
-
-               (> rotation 315)
-               (get {:r1 :r1 :r2 :r2 :r3 :r3 :r4 :r4})
-
                (:flip-x shape)
                (get {:r1 :r2 :r2 :r1 :r3 :r4 :r4 :r3})
 
                (:flip-y shape)
                (get {:r1 :r4 :r2 :r3 :r3 :r2 :r4 :r1})
                
+              ;;  (> rotation 45)
+              ;;  (get {:r1 :r4 :r2 :r1 :r3 :r2 :r4 :r3})
+
+              ;;  (> rotation 135)
+              ;;  (get {:r1 :r3 :r2 :r4 :r3 :r1 :r4 :r2})
+
+              ;;  (> rotation 225)
+              ;;  (get {:r1 :r2 :r2 :r1 :r3 :r4 :r4 :r3})
+
+              ;;  (> rotation 315)
+              ;;  (get {:r1 :r1 :r2 :r2 :r3 :r3 :r4 :r4})
                )
         _ (println ":::2" attr)]
 
@@ -127,24 +126,23 @@
         _ (println "(:flip-y shape)" (:flip-y shape))
         _ (println "rotation" rotation)
         shape (cond-> shape
-                (> rotation 45)
-                (assoc :r1 (:r4 shape) :r2 (:r1 shape) :r3 (:r2 shape) :r4 (:r3 shape))
-
-                (> rotation 135)
-                (assoc :r1 (:r3 shape) :r2 (:r4 shape) :r3 (:r1 shape) :r4 (:r2 shape))
-
-                (> rotation 225)
-                (assoc :r1 (:r2 shape) :r2 (:r1 shape) :r3 (:r4 shape) :r4 (:r3 shape))
-
-                (> rotation 315)
-                (assoc :r1 (:r1 shape) :r2 (:r2 shape) :r3 (:r3 shape) :r4 (:r4 shape))
-
                 (:flip-x shape)
                 (assoc :r1 (:r2 shape) :r2 (:r1 shape) :r3 (:r4 shape) :r4 (:r3 shape))
 
                 (:flip-y shape)
                 (assoc :r1 (:r4 shape) :r2 (:r3 shape) :r3 (:r2 shape) :r4 (:r1 shape))
-                
+
+                ;; (> rotation 45)
+                ;; (assoc :r1 (:r4 shape) :r2 (:r1 shape) :r3 (:r2 shape) :r4 (:r3 shape))
+
+                ;; (> rotation 135)
+                ;; (assoc :r1 (:r3 shape) :r2 (:r4 shape) :r3 (:r1 shape) :r4 (:r2 shape))
+
+                ;; (> rotation 225)
+                ;; (assoc :r1 (:r2 shape) :r2 (:r1 shape) :r3 (:r4 shape) :r4 (:r3 shape))
+
+                ;; (> rotation 315)
+                ;; (assoc :r1 (:r1 shape) :r2 (:r2 shape) :r3 (:r3 shape) :r4 (:r4 shape))
                 )
         ]
 

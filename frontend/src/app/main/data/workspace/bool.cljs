@@ -33,6 +33,9 @@
 (defn create-bool-data
   [bool-type name shapes objects]
   (let [shapes (mapv #(stp/convert-to-path % objects) shapes)
+        
+        _ (println "shapes "shapes)
+
         head (if (= bool-type :difference) (first shapes) (last shapes))
         head (cond-> head
                (and (contains? head :svg-attrs) (empty? (:fills head)))
@@ -59,6 +62,7 @@
   (let [shapes (->> (:shapes group)
                     (map #(get objects %))
                     (mapv #(stp/convert-to-path % objects)))
+        _ (println "shapes "shapes)
         head (if (= bool-type :difference) (first shapes) (last shapes))
         head (cond-> head
                (and (contains? head :svg-attrs) (empty? (:fills head)))
