@@ -49,6 +49,16 @@
 ;; -- User/drawing coords
 (mf/defc measures-menu
   [{:keys [ids ids-with-children values type all-types shape] :as props}]
+         
+         
+        ;;  (println "----------" values)
+        ;;  (println "shape" shape)
+        ;;  (println "rotation" (:rotation shape))
+        ;;  (println "flip-x" (:flip-x shape))
+        ;;  (println "flip-y" (:flip-y shape))
+         ;; TODO: consider rotation
+         ;; TODO: consider flip-x
+         ;; TODO: consider flip-y
 
   (let [options (if (= type :multiple)
                   (reduce #(union %1 %2) (map #(get type->options %) all-types))
@@ -220,8 +230,14 @@
            (let [value (-> event dom/get-target dom/checked?)]
              (st/emit! (dch/update-shapes ids (fn [shape] (assoc shape :hide-in-viewer (not value))))))))
 
-        select-all #(-> % (dom/get-target) (.select))]
-    
+        select-all #(-> % (dom/get-target) (.select))
+
+        get-radius-4-value
+        (mf/use-callback
+         (mf/deps ids shape)
+         (fn [attr]
+           (ctsr/get-radius-4 shape attr)))]
+
     (mf/use-layout-effect
      (mf/deps radius-mode @radius-multi?)
      (fn []
@@ -363,7 +379,7 @@
                 :min 0
                 :on-click select-all
                 :on-change on-radius-r1-change
-                :value (:r1 values)}]]
+                :value (get-radius-4-value :r1)}]]
 
              [:div.input-element.mini {:title (tr "workspace.options.radius")}
               [:> numeric-input
@@ -371,7 +387,7 @@
                 :min 0
                 :on-click select-all
                 :on-change on-radius-r2-change
-                :value (:r2 values)}]]
+                :value (get-radius-4-value :r2)}]]
 
              [:div.input-element.mini {:title (tr "workspace.options.radius")}
               [:> numeric-input
@@ -379,7 +395,7 @@
                 :min 0
                 :on-click select-all
                 :on-change on-radius-r3-change
-                :value (:r3 values)}]]
+                :value (get-radius-4-value :r3)}]]
 
              [:div.input-element.mini {:title (tr "workspace.options.radius")}
               [:> numeric-input
@@ -387,7 +403,7 @@
                 :min 0
                 :on-click select-all
                 :on-change on-radius-r4-change
-                :value (:r4 values)}]]])])
+                :value (get-radius-4-value :r4)}]]])])
 
        (when (options :clip-content)
          [:div.input-checkbox

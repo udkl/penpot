@@ -59,6 +59,8 @@
 
             initial (cond-> @ms/mouse-position
                       snap-pixel? gpt/round)
+            
+            _ (println "ASDASDASD")
 
             page-id (:current-page-id state)
             objects (wsh/lookup-page-objects state page-id)

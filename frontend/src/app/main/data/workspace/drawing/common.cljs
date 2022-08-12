@@ -44,6 +44,8 @@
                                (mth/floor (get-in state [:workspace-local :vbox :width]))
                                (mth/floor (get-in state [:workspace-local :vbox :height])))
 
+                 _ (println "handle-finish-drawing" (:modifiers shape))
+
                  shape
                  (cond-> shape
                    (and click-draw? (not text?))
@@ -59,7 +61,9 @@
 
                    :always
                    (-> (gsh/transform-shape)
-                       (dissoc :initialized? :click-draw?)))]
+                       (dissoc :initialized? :click-draw?)))
+
+                 _ (println "reshape" (:x shape) (:y shape) (:width shape) (:height shape))]
              ;; Add & select the created shape to the workspace
              (rx/concat
               (if (= :text (:type shape))
