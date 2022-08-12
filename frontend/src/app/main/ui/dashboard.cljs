@@ -64,7 +64,7 @@
 
 (mf/defc templates-section
   [{:keys [default-project-id profile project team content-width] :as props}]
-  (let [templates   (mf/deref builtin-templates)
+  (let [templates   (mf/deref builtin-templates) ;; TODO filter Hands-on tutorial when its ready
         route       (mf/deref refs/route)
         route-name  (get-in route [:data :name])
         section     (if (= route-name :dashboard-files)

@@ -25,6 +25,7 @@
    [beicon.core :as rx]
    [cuerdas.core :as str]
    [okulary.core :as l]
+   [potok.core :as ptk]
    [rumext.alpha :as mf]))
 
 (mf/defc header
@@ -50,36 +51,69 @@
       [:div.info
        [:span (tr "dasboard.team-hero.text")]
        [:a {:on-click  go-members} (tr "dasboard.team-hero.management")]]]
-     [:button.invite {:on-click invite-member} (tr "onboarding.choice.team-up.invite-members")]
+     [:button.btn-primary.invite {:on-click invite-member} (tr "onboarding.choice.team-up.invite-members")]
      [:button.close {:on-click close-banner}
       [:span i/close]]]))
+
+(def builtin-templates
+  (l/derived :builtin-templates st/state))
 
 (mf/defc tutorial-project
   {::mf/wrap [mf/memo]}
   [{:keys [close-tutorial] :as props}]
-  
-  [:div.tutorial
-   [:div.img "image"]
-   [:div.text
-    [:div.title "Hands on Tutorial"]
-    [:div.info "Learn the basics at Penpot while having some fun with this hands on tutorial."]
-    [:button.action "Start tutorial"]]
-   [:button.close
-    {:on-click close-tutorial}
-    [:span.icon i/close]]])
+  (let [on-finish-import
+        (fn []
+          (st/emit!
+          ;;  TODO: Add audit log
+          ;;  (ptk/event ::ev/event {::ev/name "import-tutorial-finish"
+          ;;                         ::ev/origin "projects"
+          ;;                         :template (:name template)
+          ;;                         :section "dashboard"})
+          ;;  Open file
+           ))
+        download-tutorial
+        (fn []
+          (prn "entro en el download")
+          (let [templates (mf/deref builtin-templates)
+                _ (prn templates)
+                template (first templates)
+                _ (prn template)]
+            (st/emit!
+             (modal/show
+              {:type :import
+               :project-id (:id template)
+               :files []
+               :template template
+               :on-finish-import on-finish-import}))))]
+    [:div.tutorial
+     [:div.img]
+     [:div.text
+      [:div.title (tr "dasboard.team-hero.title")]
+      [:div.info (tr "dasboard.team-hero.text")]
+      [:button.btn-primary.action {:on-click download-tutorial} (tr "dasboard.tutorial-hero.start")]]
+     [:button.close
+      {:on-click close-tutorial}
+      [:span.icon i/close]]]))
 
-(mf/defc interface-walkthrought
+(mf/defc interface-walkthrough
   {::mf/wrap [mf/memo]}
-  [{:keys [close-walkthrought] :as props}] 
-  [:div.walkthrought
-   [:div.img "image"]
-   [:div.text
-    [:div.title "Interface Walkthrought"]
-    [:div.info "Take a walk through Penpot and get to know its main features."]
-    [:button.action "Start the tour"]]
-   [:button.close
-    {:on-click close-walkthrought}
-    [:span.icon i/close]]])
+  [{:keys [close-walkthrough] :as props}]
+  (let [handle-walkthrough-link
+        (fn []
+          ;; TODO Add audit log
+          #_(st/emit! (ptk/event ::ev/event {::ev/name "go-tutorial"
+                                             ::ev/origin "walkthrough"
+                                             :section "dashboard"})))]
+    [:div.walkthrough
+     [:div.img]
+     [:div.text
+      [:div.title (tr "dasboard.walkthrough-hero.title")]
+      [:div.info (tr "dasboard.walkthrough-hero.info")]
+      [:a.btn-primary.action {:href " https://design.penpot.app/walkthrough" :target "_blank" :on-click handle-walkthrough-link}
+       (tr "dasboard.walkthrough-hero.start")]]
+     [:button.close
+      {:on-click close-walkthrough}
+      [:span.icon i/close]]]))
 
 (mf/defc project-item
   [{:keys [project first? team files] :as props}]
@@ -248,17 +282,17 @@
         recent-map         (mf/deref recent-files-ref)
         props              (some-> profile (get :props {}))
         team-hero?         (:team-hero? props true)
-        tutorial?          (:tutorial? props true)
-        walkthrought?      (:walkthrought? props true)
+        tutorial?          (:tutorial? props false)
+        walkthrough?       (:walkthrough? props false)
         close-banner       (fn []
                              (st/emit!
                               (du/update-profile-props {:team-hero? false})))
         close-tutorial     (fn []
                              (st/emit!
-                              (du/update-profile-props {:tutorial? false})))
-        close-walkthrought (fn []
+                              (du/update-profile-props {:tutorial? true})))
+        close-walkthrough  (fn []
                              (st/emit!
-                              (du/update-profile-props {:walkthrought? false})))]
+                              (du/update-profile-props {:walkthrough? true})))]
 
     (mf/use-effect
      (mf/deps team)
@@ -281,15 +315,15 @@
          [:& team-hero
           {:team team
            :close-banner close-banner}])
-       (when (or tutorial? walkthrought?)
+       (when (or (not tutorial?) (not walkthrough?))
          [:div.hero-projects
-          (when (and tutorial? (:is-default team))
+          (when (and (not tutorial?) (:is-default team))
             [:& tutorial-project
              {:close-tutorial close-tutorial}])
 
-          (when (and walkthrought? (:is-default team))
-            [:& interface-walkthrought
-             {:close-walkthrought close-walkthrought}])])
+          (when (and (not walkthrough?) (:is-default team))
+            [:& interface-walkthrough
+             {:close-walkthrough close-walkthrough}])])
 
        [:section.dashboard-container.no-bg
         (for [{:keys [id] :as project} projects]
