@@ -27,66 +27,66 @@
 
 (defn prepare-objects
   [page frame size]
-  (fn []
-    (let [objects   (:objects page)
-          frame-id  (:id frame)
-          modifier  (-> (gpt/point (:x size) (:y size))
-                        (gpt/negate)
-                        (gmt/translate-matrix))
+  (let [objects   (:objects page)
+        frame-id  (:id frame)
+        modifier  (-> (gpt/point (:x size) (:y size))
+                      (gpt/negate)
+                      (gmt/translate-matrix))
 
-          update-fn #(d/update-when %1 %2 assoc-in [:modifiers :displacement] modifier)]
+        update-fn #(d/update-when %1 %2 assoc-in [:modifiers :displacement] modifier)]
 
-      (->> (cph/get-children-ids objects frame-id)
-           (into [frame-id])
-           (reduce update-fn objects)))))
+    (->> (cph/get-children-ids objects frame-id)
+         (into [frame-id])
+         (reduce update-fn objects))))
 
 (mf/defc viewport
   {::mf/wrap [mf/memo]}
   [{:keys [page interactions-mode frame base-frame frame-offset size]}]
-  (let [objects       (mf/use-memo
-                       (mf/deps page frame size)
-                       (prepare-objects page frame size))
+  (let [objects     (mf/with-memo [page frame size]
+                      (prepare-objects page frame size))
 
-        wrapper       (mf/use-memo
-                       (mf/deps objects)
-                       #(shapes/frame-container-factory objects))
+        wrapper     (mf/with-memo [objects]
+                      (shapes/frame-container-factory objects))
 
         ;; Retrieve frames again with correct modifier
-        frame         (get objects (:id frame))
-        base-frame    (get objects (:id base-frame))
+        frame       (get objects (:id frame))
+        base-frame  (get objects (:id base-frame))
 
         on-click
-        (fn [_]
-          (when (= interactions-mode :show-on-click)
-            (st/emit! dv/flash-interactions)))
+        (mf/use-fn
+         (mf/deps interactions-mode)
+         (fn [_]
+           (when (= interactions-mode :show-on-click)
+             (st/emit! dv/flash-interactions))))
 
         on-mouse-wheel
-        (fn [event]
-          (when (kbd/mod? event)
-            (dom/prevent-default event)
-            (let [event (.getBrowserEvent ^js event)
-                  delta (+ (.-deltaY ^js event) (.-deltaX ^js event))]
-              (if (pos? delta)
-                (st/emit! dv/decrease-zoom)
-                (st/emit! dv/increase-zoom)))))
+        (mf/use-fn
+         (fn [event]
+           (when (kbd/mod? event)
+             (dom/prevent-default event)
+             (let [event (dom/event->browser-event event)
+                   delta (+ (.-deltaY ^js event)
+                            (.-deltaX ^js event))]
+               (if (pos? delta)
+                 (st/emit! dv/decrease-zoom)
+                 (st/emit! dv/increase-zoom))))))
 
         on-key-down
-        (fn [event]
-          (when (kbd/esc? event)
-            (st/emit! (dcm/close-thread))))]
+        (mf/use-fn
+         (fn [event]
+           (when (kbd/esc? event)
+             (st/emit! (dcm/close-thread)))))]
 
-    (mf/use-effect
-      (mf/deps interactions-mode) ;; on-click event depends on interactions-mode
-      (fn []
-        ;; bind with passive=false to allow the event to be cancelled
-        ;; https://stackoverflow.com/a/57582286/3219895
-        (let [key1 (events/listen goog/global "wheel" on-mouse-wheel #js {"passive" false})
-              key2 (events/listen js/window "keydown" on-key-down)
-              key3 (events/listen js/window "click" on-click)]
-          (fn []
-            (events/unlistenByKey key1)
-            (events/unlistenByKey key2)
-            (events/unlistenByKey key3)))))
+    (mf/with-effect [on-click on-key-down on-mouse-wheel]
+      ;; bind with passive=false to allow the event to be cancelled
+      ;; https://stackoverflow.com/a/57582286/3219895
+      (let [key1 (events/listen goog/global "wheel" on-mouse-wheel #js {"passive" false})
+            key2 (events/listen js/window "keydown" on-key-down)
+            key3 (events/listen js/window "click" on-click)]
+        (fn []
+          (events/unlistenByKey key1)
+          (events/unlistenByKey key2)
+          (events/unlistenByKey key3))))
 
     [:& (mf/provider shapes/base-frame-ctx) {:value base-frame}
      [:& (mf/provider shapes/frame-offset-ctx) {:value frame-offset}
@@ -104,7 +104,7 @@
 (mf/defc flows-menu
   {::mf/wrap [mf/memo]}
   [{:keys [page index]}]
-  (let [flows        (get-in page [:options :flows])
+  (let [flows        (dm/get-in page [:options :flows])
         frames       (:frames page)
         frame        (get frames index)
         current-flow (mf/use-state
@@ -134,7 +134,6 @@
                  :on-click #(select-flow flow)}
             [:span.icon i/tick]
             [:span.label (:name flow)]])]]])))
-
 
 (mf/defc interactions-menu
   []
