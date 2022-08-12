@@ -9,6 +9,7 @@
    [app.common.math :as mth]
    [app.main.data.dashboard :as dd]
    [app.main.data.events :as ev]
+   [app.main.data.messages :as dm]
    [app.main.data.modal :as modal]
    [app.main.data.users :as du]
    [app.main.refs :as refs]
@@ -59,38 +60,54 @@
   (l/derived :builtin-templates st/state))
 
 (mf/defc tutorial-project
-  {::mf/wrap [mf/memo]}
-  [{:keys [close-tutorial] :as props}]
-  (let [on-finish-import
+  [{:keys [close-tutorial default-project-id] :as props}]
+  (let [state (mf/use-state
+               {:status :waiting
+                :file nil})
+
+        template (first  (mf/deref builtin-templates))
+
+        on-template-cloned-success
+        (mf/use-callback
+         (fn [response]
+
+           (swap! state
+                  (fn [state]
+                    (-> state
+                        (assoc :status :success :file (:first response)))))
+           (st/emit! (dd/go-to-workspace {:id (first response) :project-id default-project-id :name "tutorial"})
+                     (du/update-profile-props {:viewed-tutorial? true}))))
+
+        on-template-cloned-error
         (fn []
+          (swap! state
+                 (fn [state]
+                   (-> state
+                       (assoc :status :waiting))))
           (st/emit!
-          ;;  TODO: Add audit log
-          ;;  (ptk/event ::ev/event {::ev/name "import-tutorial-finish"
-          ;;                         ::ev/origin "projects"
-          ;;                         :template (:name template)
-          ;;                         :section "dashboard"})
-          ;;  Open file
-           ))
+           (dm/error (tr "dashboard.libraries-and-templates.import-error"))))
+
         download-tutorial
         (fn []
-          (prn "entro en el download")
-          (let [templates (mf/deref builtin-templates)
-                _ (prn templates)
-                template (first templates)
-                _ (prn template)]
-            (st/emit!
-             (modal/show
-              {:type :import
-               :project-id (:id template)
-               :files []
-               :template template
-               :on-finish-import on-finish-import}))))]
+          (let [mdata  {:on-success on-template-cloned-success :on-error on-template-cloned-error}
+                params {:project-id default-project-id :template-id (:id template)}]
+            (swap! state
+                   (fn [state]
+                     (-> state
+                         (assoc :status :importing))))
+            (st/emit! (dd/clone-template (with-meta params mdata)))))]
     [:div.tutorial
      [:div.img]
      [:div.text
       [:div.title (tr "dasboard.team-hero.title")]
       [:div.info (tr "dasboard.team-hero.text")]
-      [:button.btn-primary.action {:on-click download-tutorial} (tr "dasboard.tutorial-hero.start")]]
+      [:button.btn-primary.action {:on-click download-tutorial} 
+       (case (:status @state)
+         :waiting (tr "dasboard.tutorial-hero.start")
+         :importing [:span.loader i/loader-pencil]
+         :success ""
+         )
+       ]]
      [:button.close
       {:on-click close-tutorial}
       [:span.icon i/close]]]))
@@ -275,24 +292,24 @@
   (l/derived :dashboard-recent-files st/state))
 
 (mf/defc projects-section
-  [{:keys [team projects profile] :as props}]
-  (let [projects           (->> (vals projects)
-                                (sort-by :modified-at)
-                                (reverse))
-        recent-map         (mf/deref recent-files-ref)
-        props              (some-> profile (get :props {}))
-        team-hero?         (:team-hero? props true)
-        tutorial?          (:tutorial? props false)
-        walkthrough?       (:walkthrough? props false)
-        close-banner       (fn []
-                             (st/emit!
-                              (du/update-profile-props {:team-hero? false})))
-        close-tutorial     (fn []
-                             (st/emit!
-                              (du/update-profile-props {:tutorial? true})))
-        close-walkthrough  (fn []
-                             (st/emit!
-                              (du/update-profile-props {:walkthrough? true})))]
+  [{:keys [team projects profile default-project-id] :as props}]
+  (let [projects            (->> (vals projects)
+                                 (sort-by :modified-at)
+                                 (reverse))
+        recent-map          (mf/deref recent-files-ref)
+        props               (some-> profile (get :props {}))
+        team-hero?          (:team-hero? props true)
+        tutorial-viewed?    (:viewed-tutorial? props false)
+        walkthrough-viewed? (:viewed-walkthrough? props false)
+        close-banner        (fn []
+                              (st/emit!
+                               (du/update-profile-props {:team-hero? false})))
+        close-tutorial      (fn []
+                              (st/emit!
+                               (du/update-profile-props {:viewed-tutorial? true})))
+        close-walkthrough   (fn []
+                              (st/emit!
+                               (du/update-profile-props {:viewed-walkthrough? true})))]
 
     (mf/use-effect
      (mf/deps team)
@@ -315,13 +332,14 @@
          [:& team-hero
           {:team team
            :close-banner close-banner}])
-       (when (or (not tutorial?) (not walkthrough?))
+       (when (or (not tutorial-viewed?) (not walkthrough-viewed?))
          [:div.hero-projects
-          (when (and (not tutorial?) (:is-default team))
+          (when (and (not tutorial-viewed?) (:is-default team))
             [:& tutorial-project
-             {:close-tutorial close-tutorial}])
+             {:close-tutorial close-tutorial
+              :default-project-id default-project-id}])
 
-          (when (and (not walkthrough?) (:is-default team))
+          (when (and (not walkthrough-viewed?) (:is-default team))
             [:& interface-walkthrough
              {:close-walkthrough close-walkthrough}])])
 

@@ -141,8 +141,8 @@
                                            :section section})))]
 
     [:div.dashboard-templates-section {:class (when collapsed "collapsed")}
-     [:div.title {:on-click toggle-collapse}
-      [:div
+     [:div.title 
+      [:div {:on-click toggle-collapse}
        [:span (tr "dashboard.libraries-and-templates")]
        [:span.icon (if collapsed i/arrow-up i/arrow-down)]]]
      [:div.content {:ref content-ref
@@ -192,7 +192,10 @@
      (case section
        :dashboard-projects
        [:*
-        [:& projects-section {:team team :projects projects :profile profile}]
+        [:& projects-section {:team team 
+                              :projects projects 
+                              :profile profile
+                              :default-project-id default-project-id}]
         [:& templates-section {:profile profile
                                :project project
                                :default-project-id default-project-id
