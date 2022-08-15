@@ -20,9 +20,9 @@ COPY docker/gitpod/files/nginx.conf /etc/nginx/nginx.conf
 
 USER root
 
-ENV CLOJURE_VERSION=1.10.3.822 \
-    CLJKONDO_VERSION=2021.03.31 \
-    BABASHKA_VERSION=0.3.2 \
+ENV CLOJURE_VERSION=1.11.1.1149 \
+    CLJKONDO_VERSION=2022.06.22 \
+    BABASHKA_VERSION=0.8.156 \
     LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8
 
@@ -69,15 +69,16 @@ RUN set -ex; \
         libappindicator1 \
         libnss3 \
         libgbm1 \
+        xvfb \
     ; \
     rm -rf /var/lib/apt/lists/*;
 
 RUN set -ex; \
-    curl -LfsSo /tmp/openjdk.tar.gz https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-16%2B36/OpenJDK16-jdk_x64_linux_hotspot_16_36.tar.gz; \
-    mkdir -p /usr/lib/jvm/openjdk16; \
-    cd /usr/lib/jvm/openjdk16; \
-    tar -xf /tmp/openjdk.tar.gz --strip-components=1; \
-    rm -rf /tmp/openjdk.tar.gz;
+    curl -LfsSo /tmp/openjdk18.tar.gz https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.1%2B10/OpenJDK18U-jdk_x64_linux_hotspot_18.0.1_10.tar.gz; \
+    mkdir -p /usr/lib/jvm/openjdk18; \
+    cd /usr/lib/jvm/openjdk18; \
+    tar -xf /tmp/openjdk18.tar.gz --strip-components=1; \
+    rm -rf /tmp/openjdk18.tar.gz;
 
 # Install clojure cli
 RUN set -ex; \
@@ -103,8 +104,8 @@ RUN set -ex; \
 
 USER gitpod
 
-ENV PATH="/usr/lib/jvm/openjdk16/bin:/usr/local/nodejs/bin:$PATH" \
-    JAVA_HOME=/usr/lib/jvm/openjdk16 \
+ENV PATH="/usr/lib/jvm/openjdk18/bin:/usr/local/nodejs/bin:$PATH" \
+    JAVA_HOME=/usr/lib/jvm/openjdk18 \
     PENPOT_SMTP_ENABLED=true \
     PENPOT_SMTP_HOST=localhost \
     PENPOT_SMTP_PORT=1025 \
